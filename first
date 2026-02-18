@@ -3,34 +3,36 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <title>Simulátor glykémie (odhad)</title>
+  <title>Edukativní simulátor glykémie</title>
   <style>
     body { font-family: system-ui, Arial, sans-serif; background:#f4f6f9; margin:0; padding:24px; display:flex; justify-content:center; }
-    .card { background:#fff; width:100%; max-width:900px; border-radius:14px; box-shadow:0 10px 30px rgba(0,0,0,.08); padding:20px; }
+    .card { background:#fff; width:100%; max-width:980px; border-radius:14px; box-shadow:0 10px 30px rgba(0,0,0,.08); padding:20px; }
     h1 { margin:0 0 8px; }
-    .row { display:grid; grid-template-columns: 1fr 1fr 1fr 1fr auto; gap:10px; align-items:end; margin-top:14px; }
+    .muted { font-size:13px; opacity:.75; }
+    .row { display:grid; grid-template-columns: 1.2fr .7fr .7fr .9fr .9fr auto; gap:10px; align-items:end; margin-top:14px; }
     label { display:block; font-size:13px; opacity:.85; margin-bottom:6px; }
     input, select { width:100%; padding:10px; border:1px solid #d7dde6; border-radius:10px; }
     button { padding:10px 14px; border:0; border-radius:10px; cursor:pointer; background:#0b5fff; color:#fff; }
     button.secondary { background:#eef2f7; color:#111; }
     table { width:100%; border-collapse:collapse; margin-top:14px; }
     th, td { text-align:left; padding:10px; border-bottom:1px solid #eef2f7; font-size:14px; }
-    .muted { font-size:13px; opacity:.75; }
-    .grid2 { display:grid; grid-template-columns: 1fr 1fr; gap:14px; margin-top:14px; }
-    @media (max-width: 820px){ .row{ grid-template-columns:1fr 1fr; } .grid2{ grid-template-columns:1fr; } }
+    .grid2 { display:grid; grid-template-columns: 1.1fr .9fr; gap:14px; margin-top:14px; }
+    @media (max-width: 920px){ .row{ grid-template-columns:1fr 1fr; } .grid2{ grid-template-columns:1fr; } }
+    .pill { display:inline-block; padding:2px 8px; border-radius:999px; background:#eef2f7; font-size:12px; margin-left:6px; }
   </style>
 </head>
 <body>
 <div class="card">
-  <h1>Simulátor glykémie (odhad)</h1>
+  <h1>Edukativní simulátor glykémie <span class="pill">odhad</span></h1>
   <div class="muted">
-    Edukační simulace. Ne pro diagnostiku ani rozhodování o léčbě. Reálné reakce jsou individuálně velmi variabilní.
+    Tento nástroj je určen pro edukaci a vizualizaci principů (GI/GL a skládání “vln” po jídle).
+    Není to zdravotnický prostředek ani diagnóza.
   </div>
 
   <div class="grid2">
     <div>
       <h3>Nastavení</h3>
-      <div class="row" style="grid-template-columns:1fr 1fr;">
+      <div class="row" style="grid-template-columns:1fr 1fr 1fr;">
         <div>
           <label>Základní hladina (mg/dL)</label>
           <input id="baseline" type="number" value="90" min="50" max="200">
@@ -43,35 +45,58 @@
             <option value="1.2">Vyšší reakce</option>
           </select>
         </div>
+        <div>
+          <label>Krok simulace</label>
+          <select id="step">
+            <option value="5" selected>5 min</option>
+            <option value="10">10 min</option>
+            <option value="15">15 min</option>
+          </select>
+        </div>
       </div>
 
       <h3 style="margin-top:18px;">Přidat jídlo</h3>
+
       <div class="row">
+        <div>
+          <label>Potravina (přednastavení)</label>
+          <select id="food"></select>
+        </div>
+
         <div>
           <label>Čas</label>
           <input id="time" type="time" value="08:00">
         </div>
+
+        <div>
+          <label>Porce (x)</label>
+          <input id="portion" type="number" value="1" min="0.25" step="0.25">
+        </div>
+
         <div>
           <label>Sacharidy (g)</label>
           <input id="carbs" type="number" value="50" min="0" max="300">
         </div>
+
         <div>
           <label>GI (0–100)</label>
           <input id="gi" type="number" value="55" min="0" max="100">
         </div>
+
         <div>
-          <label>“Zpomalení” (tuky/bílkoviny)</label>
+          <label>“Zpomalení”</label>
           <select id="slow">
             <option value="0">žádné</option>
             <option value="10">trochu</option>
             <option value="20">hodně</option>
           </select>
         </div>
+
         <button id="addBtn">Přidat</button>
       </div>
 
       <table>
-        <thead><tr><th>Čas</th><th>Sacharidy</th><th>GI</th><th>Zpomalení</th><th></th></tr></thead>
+        <thead><tr><th>Čas</th><th>Položka</th><th>Sacharidy</th><th>GI</th><th>GL</th><th></th></tr></thead>
         <tbody id="meals"></tbody>
       </table>
 
@@ -83,9 +108,9 @@
 
     <div>
       <h3>Graf (0:00–24:00)</h3>
-      <canvas id="chart" height="300"></canvas>
+      <canvas id="chart" height="320"></canvas>
       <div class="muted" style="margin-top:10px;">
-        Tip: Přidej snídani/oběd/večeři a uvidíš skládání vln.
+        GL = (sacharidy v g) × (GI/100). Tohle je zjednodušená edukativní aproximace.
       </div>
     </div>
   </div>
@@ -93,21 +118,64 @@
 
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 <script>
+  // Mini databáze: GI + typické sacharidy na 1 porci (čistě orientační pro edukaci).
+  // Můžeš ji rozšířit (ideálně později do foods.json).
+  const FOODS = [
+    { id:"custom", name:"Vlastní (ručně)", gi:55, carbs:50 },
+    { id:"banana", name:"Banán (1 ks)", gi:51, carbs:27 },
+    { id:"white_bread", name:"Bílý chléb (2 plátky)", gi:75, carbs:30 },
+    { id:"oats", name:"Ovesná kaše (1 miska)", gi:55, carbs:30 },
+    { id:"rice_white", name:"Bílá rýže (1 porce)", gi:73, carbs:45 },
+    { id:"rice_basmati", name:"Rýže basmati (1 porce)", gi:50, carbs:45 },
+    { id:"pasta", name:"Těstoviny al dente (1 porce)", gi:45, carbs:40 },
+    { id:"potatoes", name:"Brambory vařené (1 porce)", gi:78, carbs:35 },
+    { id:"apple", name:"Jablko (1 ks)", gi:36, carbs:19 },
+    { id:"yogurt", name:"Bílý jogurt (1 kelímek)", gi:35, carbs:12 },
+    { id:"cola", name:"Slazená limonáda (330 ml)", gi:63, carbs:35 }
+  ];
+
   const meals = [];
   const mealsTbody = document.getElementById('meals');
+
+  const foodSel = document.getElementById('food');
+  const giInp = document.getElementById('gi');
+  const carbsInp = document.getElementById('carbs');
+  const portionInp = document.getElementById('portion');
+
+  function fillFoods(){
+    foodSel.innerHTML = FOODS.map(f => `<option value="${f.id}">${f.name}</option>`).join('');
+    foodSel.value = "custom";
+  }
+  fillFoods();
+
+  function getFoodById(id){ return FOODS.find(f => f.id === id) || FOODS[0]; }
+
+  function applyFoodPreset(){
+    const f = getFoodById(foodSel.value);
+    if(f.id === "custom") return;
+    const portion = Number(portionInp.value) || 1;
+    giInp.value = f.gi;
+    carbsInp.value = Math.round(f.carbs * portion);
+  }
+
+  foodSel.addEventListener('change', applyFoodPreset);
+  portionInp.addEventListener('input', applyFoodPreset);
 
   function timeToMinutes(t){
     const [h,m] = t.split(':').map(Number);
     return h*60 + m;
   }
 
+  function glOf(carbs, gi){ return carbs * (gi/100); }
+
   function renderMeals(){
     mealsTbody.innerHTML = meals.map((m, idx) => `
       <tr>
         <td>${m.time}</td>
+        <td>${m.name}</td>
         <td>${m.carbs} g</td>
         <td>${m.gi}</td>
-        <td>${m.slow}</td>
+        <td>${m.gl.toFixed(1)}</td>
         <td><button class="secondary" onclick="removeMeal(${idx})">×</button></td>
       </tr>
     `).join('');
@@ -115,3 +183,108 @@
 
   window.removeMeal = (idx) => {
     meals.splice(idx,1);
+    renderMeals();
+  };
+
+  document.getElementById('addBtn').addEventListener('click', () => {
+    const time = document.getElementById('time').value;
+    const portion = Number(portionInp.value) || 1;
+    const carbs = Number(carbsInp.value);
+    const gi = Number(giInp.value);
+    const slow = Number(document.getElementById('slow').value);
+    const preset = getFoodById(foodSel.value);
+    const name = (preset.id === "custom") ? `Vlastní (${portion}×)` : `${preset.name} (${portion}×)`;
+
+    if(!time || carbs < 0 || gi < 0 || gi > 100) return alert('Zkontroluj vstupy.');
+    const gl = glOf(carbs, gi);
+
+    meals.push({ time, carbs, gi, slow, gl, name });
+    meals.sort((a,b)=> timeToMinutes(a.time)-timeToMinutes(b.time));
+    renderMeals();
+  });
+
+  document.getElementById('clearBtn').addEventListener('click', () => {
+    meals.length = 0;
+    renderMeals();
+  });
+
+  // Edukační “vlna” po jídle (gauss) – zjednodušení
+  function mealWave(tMin, meal, sensitivity){
+    const t0 = timeToMinutes(meal.time);
+    const gl = meal.gl;
+
+    // čas do vrcholu (min): vyšší GI rychlejší, zpomalení posouvá doprava
+    const tPeak = 80 - (meal.gi * 0.5) + meal.slow * 0.8;
+
+    // šířka (sigma): pomalejší jídla širší
+    const sigma = 35 + (100 - meal.gi) * 0.35 + meal.slow;
+
+    // amplituda v mg/dL (heuristika)
+    const amp = gl * 0.9 * sensitivity;
+
+    const mu = t0 + tPeak;
+    const x = (tMin - mu) / sigma;
+    return amp * Math.exp(-0.5 * x * x);
+  }
+
+  function buildDaySeries(){
+    const baseline = Number(document.getElementById('baseline').value) || 90;
+    const sensitivity = Number(document.getElementById('sensitivity').value) || 1.0;
+    const step = Number(document.getElementById('step').value) || 5;
+
+    const labels = [];
+    const values = [];
+
+    for(let t=0; t<=24*60; t+=step){
+      const hh = String(Math.floor(t/60)).padStart(2,'0');
+      const mm = String(t%60).padStart(2,'0');
+      labels.push(`${hh}:${mm}`);
+
+      let g = baseline;
+      for(const meal of meals){
+        g += mealWave(t, meal, sensitivity);
+      }
+      g = Math.max(40, Math.min(350, g));
+      values.push(Math.round(g));
+    }
+
+    return { labels, values };
+  }
+
+  let chart;
+  function drawChart(){
+    const { labels, values } = buildDaySeries();
+    const ctx = document.getElementById('chart');
+
+    if(chart) chart.destroy();
+    chart = new Chart(ctx, {
+      type: 'line',
+      data: {
+        labels,
+        datasets: [{
+          label: 'Odhad glykémie (mg/dL)',
+          data: values,
+          pointRadius: 0,
+          tension: 0.25
+        }]
+      },
+      options: {
+        responsive: true,
+        interaction: { mode: 'index', intersect: false },
+        scales: {
+          x: { ticks: { maxTicksLimit: 10 } },
+          y: { title: { display: true, text: 'mg/dL' } }
+        }
+      }
+    });
+  }
+
+  document.getElementById('runBtn').addEventListener('click', () => {
+    if(meals.length === 0) return alert('Přidej aspoň jedno jídlo.');
+    drawChart();
+  });
+
+  renderMeals();
+</script>
+</body>
+</html>

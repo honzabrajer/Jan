@@ -6,35 +6,33 @@
   <title>Edukativní simulátor glykémie</title>
   <style>
     body { font-family: system-ui, Arial, sans-serif; background:#f4f6f9; margin:0; padding:24px; display:flex; justify-content:center; }
-    .card { background:#fff; width:100%; max-width:1100px; border-radius:14px; box-shadow:0 10px 30px rgba(0,0,0,.08); padding:20px; }
+    .card { background:#fff; width:100%; max-width:980px; border-radius:14px; box-shadow:0 10px 30px rgba(0,0,0,.08); padding:20px; }
     h1 { margin:0 0 8px; }
     .muted { font-size:13px; opacity:.75; }
-    .grid2 { display:grid; grid-template-columns: 1.15fr .85fr; gap:14px; margin-top:14px; }
-    .row { display:grid; grid-template-columns: 1.4fr .7fr .55fr .75fr .75fr; gap:10px; align-items:end; margin-top:14px; }
+    .row { display:grid; grid-template-columns: 1.2fr .7fr .7fr .9fr .9fr auto; gap:10px; align-items:end; margin-top:14px; }
     label { display:block; font-size:13px; opacity:.85; margin-bottom:6px; }
     input, select { width:100%; padding:10px; border:1px solid #d7dde6; border-radius:10px; }
     button { padding:10px 14px; border:0; border-radius:10px; cursor:pointer; background:#0b5fff; color:#fff; }
     button.secondary { background:#eef2f7; color:#111; }
     table { width:100%; border-collapse:collapse; margin-top:14px; }
-    th, td { text-align:left; padding:10px; border-bottom:1px solid #eef2f7; font-size:14px; vertical-align:top; }
+    th, td { text-align:left; padding:10px; border-bottom:1px solid #eef2f7; font-size:14px; }
+    .grid2 { display:grid; grid-template-columns: 1.1fr .9fr; gap:14px; margin-top:14px; }
+    @media (max-width: 920px){ .row{ grid-template-columns:1fr 1fr; } .grid2{ grid-template-columns:1fr; } }
     .pill { display:inline-block; padding:2px 8px; border-radius:999px; background:#eef2f7; font-size:12px; margin-left:6px; }
-    .mini { font-size:12px; opacity:.75; }
-    .error { background:#fff3f3; border:1px solid #ffd2d2; color:#7a0000; padding:10px; border-radius:10px; margin-top:10px; display:none; }
-    .settings { display:grid; grid-template-columns: 1fr 1fr 1fr; gap:10px; margin-top:12px; }
-    @media (max-width: 980px){ .grid2{ grid-template-columns:1fr; } .row{ grid-template-columns:1fr 1fr; } .settings{ grid-template-columns:1fr; } }
   </style>
 </head>
 <body>
 <div class="card">
   <h1>Edukativní simulátor glykémie <span class="pill">odhad</span></h1>
   <div class="muted">
-    Edukační simulace tvaru “vln” po jídle (GI/GL + vliv tuků/bílkovin/vlákniny na zpomalení). Ne pro diagnózu ani léčbu.
+    Tento nástroj je určen pro edukaci a vizualizaci principů (GI/GL a skládání “vln” po jídle).
+    Není to zdravotnický prostředek ani diagnóza.
   </div>
 
   <div class="grid2">
     <div>
-      <h3>Nastavení dne</h3>
-      <div class="settings">
+      <h3>Nastavení</h3>
+      <div class="row" style="grid-template-columns:1fr 1fr 1fr;">
         <div>
           <label>Základní hladina (mg/dL)</label>
           <input id="baseline" type="number" value="90" min="50" max="200">
@@ -61,10 +59,8 @@
 
       <div class="row">
         <div>
-          <label>Potravina (vyhledávání)</label>
-          <input id="foodQuery" list="foodsList" placeholder="Začni psát… (např. banán, rýže, těstoviny)">
-          <datalist id="foodsList"></datalist>
-          <div class="mini">Vyber z databáze nebo nech prázdné a vyplň ručně.</div>
+          <label>Potravina (přednastavení)</label>
+          <select id="food"></select>
         </div>
 
         <div>
@@ -73,7 +69,7 @@
         </div>
 
         <div>
-          <label>Porce (×)</label>
+          <label>Porce (x)</label>
           <input id="portion" type="number" value="1" min="0.25" step="0.25">
         </div>
 
@@ -86,42 +82,21 @@
           <label>GI (0–100)</label>
           <input id="gi" type="number" value="55" min="0" max="100">
         </div>
-      </div>
 
-      <div class="row" style="grid-template-columns: .9fr .9fr .9fr .9fr auto;">
         <div>
-          <label>Bílkoviny (g)</label>
-          <input id="protein" type="number" value="0" min="0" max="200">
+          <label>“Zpomalení”</label>
+          <select id="slow">
+            <option value="0">žádné</option>
+            <option value="10">trochu</option>
+            <option value="20">hodně</option>
+          </select>
         </div>
-        <div>
-          <label>Tuky (g)</label>
-          <input id="fat" type="number" value="0" min="0" max="200">
-        </div>
-        <div>
-          <label>Vláknina (g)</label>
-          <input id="fiber" type="number" value="0" min="0" max="100">
-        </div>
-        <div>
-          <label>Zpomalení (auto)</label>
-          <input id="slow" type="text" value="—" disabled>
-          <div class="mini">počítá se z makro</div>
-        </div>
+
         <button id="addBtn">Přidat</button>
       </div>
 
-      <div id="err" class="error"></div>
-
       <table>
-        <thead>
-          <tr>
-            <th>Čas</th>
-            <th>Položka</th>
-            <th>Makra</th>
-            <th>GI / GL</th>
-            <th>Zpomalení</th>
-            <th></th>
-          </tr>
-        </thead>
+        <thead><tr><th>Čas</th><th>Položka</th><th>Sacharidy</th><th>GI</th><th>GL</th><th></th></tr></thead>
         <tbody id="meals"></tbody>
       </table>
 
@@ -133,9 +108,9 @@
 
     <div>
       <h3>Graf (0:00–24:00)</h3>
-      <canvas id="chart" height="340"></canvas>
+      <canvas id="chart" height="320"></canvas>
       <div class="muted" style="margin-top:10px;">
-        GL = sacharidy × (GI/100). “Zpomalení” je jednoduchá edukativní heuristika z tuků/bílkovin/vlákniny.
+        GL = (sacharidy v g) × (GI/100). Tohle je zjednodušená edukativní aproximace.
       </div>
     </div>
   </div>
@@ -143,144 +118,68 @@
 
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 <script>
-  // =====================
-  // Data + helpers
-  // =====================
-  let FOODS = []; // načte se z foods.json
+  // Mini databáze: GI + typické sacharidy na 1 porci (čistě orientační pro edukaci).
+  // Můžeš ji rozšířit (ideálně později do foods.json).
+  const FOODS = [
+    { id:"custom", name:"Vlastní (ručně)", gi:55, carbs:50 },
+    { id:"Honzova snídaně", name:"MIX vločky", gi:45, carbs:50 },
+    { id:"Honzův oběd", name:"Kuře s bramborem", gi:60, carbs:40 },
+    { id:"Honzova večeře", name:"Tuňák s rýží", gi:70, carbs:60 },
+    { id:"4 piva", name:"4 piva", gi:100, carbs:100 },
+    { id:"banana", name:"Banán (1 ks)", gi:51, carbs:27 },
+    { id:"white_bread", name:"Bílý chléb (2 plátky)", gi:75, carbs:30 },
+    { id:"oats", name:"Ovesná kaše (1 miska)", gi:55, carbs:30 },
+    { id:"rice_white", name:"Bílá rýže (1 porce)", gi:73, carbs:45 },
+    { id:"rice_basmati", name:"Rýže basmati (1 porce)", gi:50, carbs:45 },
+    { id:"pasta", name:"Těstoviny al dente (1 porce)", gi:45, carbs:40 },
+    { id:"potatoes", name:"Brambory vařené (1 porce)", gi:78, carbs:35 },
+    { id:"apple", name:"Jablko (1 ks)", gi:36, carbs:19 },
+    { id:"yogurt", name:"Bílý jogurt (1 kelímek)", gi:35, carbs:12 },
+    { id:"cola", name:"Slazená limonáda (330 ml)", gi:63, carbs:35 }
+  ];
+
   const meals = [];
   const mealsTbody = document.getElementById('meals');
-  const errBox = document.getElementById('err');
 
-  function showErr(msg){
-    errBox.style.display = 'block';
-    errBox.textContent = msg;
+  const foodSel = document.getElementById('food');
+  const giInp = document.getElementById('gi');
+  const carbsInp = document.getElementById('carbs');
+  const portionInp = document.getElementById('portion');
+
+  function fillFoods(){
+    foodSel.innerHTML = FOODS.map(f => `<option value="${f.id}">${f.name}</option>`).join('');
+    foodSel.value = "custom";
   }
-  function clearErr(){
-    errBox.style.display = 'none';
-    errBox.textContent = '';
+  fillFoods();
+
+  function getFoodById(id){ return FOODS.find(f => f.id === id) || FOODS[0]; }
+
+  function applyFoodPreset(){
+    const f = getFoodById(foodSel.value);
+    if(f.id === "custom") return;
+    const portion = Number(portionInp.value) || 1;
+    giInp.value = f.gi;
+    carbsInp.value = Math.round(f.carbs * portion);
   }
+
+  foodSel.addEventListener('change', applyFoodPreset);
+  portionInp.addEventListener('input', applyFoodPreset);
 
   function timeToMinutes(t){
     const [h,m] = t.split(':').map(Number);
     return h*60 + m;
   }
 
-  function clamp(x, a, b){ return Math.max(a, Math.min(b, x)); }
-
   function glOf(carbs, gi){ return carbs * (gi/100); }
 
-  // Heuristika "zpomalení" z makro:
-  // - vláknina a tuky zpomalují víc, bílkoviny mírně
-  // - výstup je "slowPts" v rozsahu cca 0–40 (pak clamp)
-  function slowFromMacros({protein, fat, fiber}){
-    const slowPts = (fiber * 1.4) + (fat * 0.7) + (protein * 0.25);
-    return clamp(slowPts, 0, 45);
-  }
-
-  // Přepočet podle porcí (x)
-  function scaleByPortion(item, portion){
-    return {
-      ...item,
-      carbs_g: Math.round(item.carbs_g * portion),
-      protein_g: Math.round(item.protein_g * portion * 10)/10,
-      fat_g: Math.round(item.fat_g * portion * 10)/10,
-      fiber_g: Math.round(item.fiber_g * portion * 10)/10
-    };
-  }
-
-  // =====================
-  // Load foods.json + datalist
-  // =====================
-  async function loadFoods(){
-    try{
-      const res = await fetch('./foods.json', { cache: 'no-store' });
-      if(!res.ok) throw new Error(`HTTP ${res.status}`);
-      FOODS = await res.json();
-
-      const dl = document.getElementById('foodsList');
-      dl.innerHTML = FOODS.map(f => `<option value="${f.name}"></option>`).join('');
-      clearErr();
-    }catch(e){
-      showErr("Nepovedlo se načíst foods.json. Zkontroluj, že je ve stejném rootu jako index.html a GitHub Pages běží. (" + e.message + ")");
-    }
-  }
-  loadFoods();
-
-  // =====================
-  // Inputs + preset fill
-  // =====================
-  const foodQuery = document.getElementById('foodQuery');
-  const portionInp = document.getElementById('portion');
-  const giInp = document.getElementById('gi');
-  const carbsInp = document.getElementById('carbs');
-  const proteinInp = document.getElementById('protein');
-  const fatInp = document.getElementById('fat');
-  const fiberInp = document.getElementById('fiber');
-  const slowOut = document.getElementById('slow');
-
-  function recomputeSlow(){
-    const protein = Number(proteinInp.value) || 0;
-    const fat = Number(fatInp.value) || 0;
-    const fiber = Number(fiberInp.value) || 0;
-    const slowPts = slowFromMacros({protein, fat, fiber});
-    slowOut.value = `${slowPts.toFixed(1)} pts`;
-  }
-
-  proteinInp.addEventListener('input', recomputeSlow);
-  fatInp.addEventListener('input', recomputeSlow);
-  fiberInp.addEventListener('input', recomputeSlow);
-  recomputeSlow();
-
-  function findFoodByName(name){
-    if(!name) return null;
-    const n = name.trim().toLowerCase();
-    return FOODS.find(f => f.name.toLowerCase() === n) || null;
-  }
-
-  function applyPresetIfMatched(){
-    const picked = findFoodByName(foodQuery.value);
-    if(!picked) return;
-
-    const portion = Number(portionInp.value) || 1;
-    const scaled = scaleByPortion(picked, portion);
-
-    giInp.value = scaled.gi;
-    carbsInp.value = scaled.carbs_g;
-    proteinInp.value = scaled.protein_g;
-    fatInp.value = scaled.fat_g;
-    fiberInp.value = scaled.fiber_g;
-    recomputeSlow();
-  }
-
-  foodQuery.addEventListener('change', applyPresetIfMatched);
-  portionInp.addEventListener('input', () => {
-    // pokud je vybraný preset, přepočti ho podle porce
-    if(findFoodByName(foodQuery.value)) applyPresetIfMatched();
-  });
-
-  // =====================
-  // Meals table
-  // =====================
   function renderMeals(){
     mealsTbody.innerHTML = meals.map((m, idx) => `
       <tr>
         <td>${m.time}</td>
-        <td>
-          <div><strong>${m.name}</strong></div>
-          <div class="mini">${m.note}</div>
-        </td>
-        <td>
-          <div>${m.carbs} g C</div>
-          <div class="mini">${m.protein} g P • ${m.fat} g F • ${m.fiber} g vlákn.</div>
-        </td>
-        <td>
-          <div>GI ${m.gi}</div>
-          <div class="mini">GL ${m.gl.toFixed(1)}</div>
-        </td>
-        <td>
-          <div>${m.slowPts.toFixed(1)} pts</div>
-          <div class="mini">z makro</div>
-        </td>
+        <td>${m.name}</td>
+        <td>${m.carbs} g</td>
+        <td>${m.gi}</td>
+        <td>${m.gl.toFixed(1)}</td>
         <td><button class="secondary" onclick="removeMeal(${idx})">×</button></td>
       </tr>
     `).join('');
@@ -292,30 +191,18 @@
   };
 
   document.getElementById('addBtn').addEventListener('click', () => {
-    clearErr();
-
     const time = document.getElementById('time').value;
     const portion = Number(portionInp.value) || 1;
-
     const carbs = Number(carbsInp.value);
     const gi = Number(giInp.value);
+    const slow = Number(document.getElementById('slow').value);
+    const preset = getFoodById(foodSel.value);
+    const name = (preset.id === "custom") ? `Vlastní (${portion}×)` : `${preset.name} (${portion}×)`;
 
-    const protein = Number(proteinInp.value) || 0;
-    const fat = Number(fatInp.value) || 0;
-    const fiber = Number(fiberInp.value) || 0;
-
-    if(!time) return showErr("Chybí čas.");
-    if(!(carbs >= 0)) return showErr("Sacharidy musí být číslo.");
-    if(!(gi >= 0 && gi <= 100)) return showErr("GI musí být 0–100.");
-
-    const preset = findFoodByName(foodQuery.value);
-    const name = preset ? preset.name : "Vlastní položka";
-    const note = preset ? `Porce: ${portion}× (z databáze)` : `Porce: ${portion}× (ručně)`;
-
+    if(!time || carbs < 0 || gi < 0 || gi > 100) return alert('Zkontroluj vstupy.');
     const gl = glOf(carbs, gi);
-    const slowPts = slowFromMacros({protein, fat, fiber});
 
-    meals.push({ time, name, note, carbs, gi, protein, fat, fiber, gl, slowPts });
+    meals.push({ time, carbs, gi, slow, gl, name });
     meals.sort((a,b)=> timeToMinutes(a.time)-timeToMinutes(b.time));
     renderMeals();
   });
@@ -325,26 +212,18 @@
     renderMeals();
   });
 
-  // =====================
-  // Wave model
-  // =====================
-  // Edukační vlna: gauss.
-  // - amplituda ~ GL * sensitivity
-  // - tPeak kratší u vyššího GI
-  // - sigma širší u nízkého GI a vyššího slowPts
-  function mealWaveAt(tMin, meal, sensitivity){
+  // Edukační “vlna” po jídle (gauss) – zjednodušení
+  function mealWave(tMin, meal, sensitivity){
     const t0 = timeToMinutes(meal.time);
-
     const gl = meal.gl;
-    const slow = meal.slowPts;
 
-    // čas do vrcholu (min): GI 90 => ~35, GI 40 => ~60; slow posouvá doprava
-    const tPeak = (80 - (meal.gi * 0.5)) + (slow * 0.9);
+    // čas do vrcholu (min): vyšší GI rychlejší, zpomalení posouvá doprava
+    const tPeak = 80 - (meal.gi * 0.5) + meal.slow * 0.8;
 
-    // šířka: pomalejší jídla širší
-    const sigma = 35 + (100 - meal.gi) * 0.35 + slow * 0.8;
+    // šířka (sigma): pomalejší jídla širší
+    const sigma = 35 + (100 - meal.gi) * 0.35 + meal.slow;
 
-    // amplituda (mg/dL) – heuristika pro hezké tvary
+    // amplituda v mg/dL (heuristika)
     const amp = gl * 0.9 * sensitivity;
 
     const mu = t0 + tPeak;
@@ -352,100 +231,60 @@
     return amp * Math.exp(-0.5 * x * x);
   }
 
-  function buildSeries(){
+  function buildDaySeries(){
     const baseline = Number(document.getElementById('baseline').value) || 90;
     const sensitivity = Number(document.getElementById('sensitivity').value) || 1.0;
     const step = Number(document.getElementById('step').value) || 5;
 
     const labels = [];
-    const tAxis = [];
+    const values = [];
 
     for(let t=0; t<=24*60; t+=step){
       const hh = String(Math.floor(t/60)).padStart(2,'0');
       const mm = String(t%60).padStart(2,'0');
       labels.push(`${hh}:${mm}`);
-      tAxis.push(t);
+
+      let g = baseline;
+      for(const meal of meals){
+        g += mealWave(t, meal, sensitivity);
+      }
+      g = Math.max(40, Math.min(350, g));
+      values.push(Math.round(g));
     }
 
-    // per-meal datasets (jen vlna bez baseline)
-    const perMeal = meals.map((meal) => {
-      const data = tAxis.map(t => Math.round(mealWaveAt(t, meal, sensitivity)));
-      return { meal, data };
-    });
-
-    // total (baseline + sum)
-    const total = tAxis.map((t, i) => {
-      let g = baseline;
-      for(const pm of perMeal){
-        g += pm.data[i];
-      }
-      g = clamp(g, 40, 350);
-      return Math.round(g);
-    });
-
-    return { labels, perMeal, total };
+    return { labels, values };
   }
 
-  // =====================
-  // Chart
-  // =====================
   let chart;
-
-  function makeColor(i){
-    // HSL bez ručního zadávání konkrétních barev: rozprostřeme odstín.
-    const hue = (i * 47) % 360;
-    return `hsl(${hue}, 70%, 45%)`;
-  }
-
   function drawChart(){
-    const { labels, perMeal, total } = buildSeries();
+    const { labels, values } = buildDaySeries();
     const ctx = document.getElementById('chart');
-
-    const datasets = [];
-
-    // celková křivka (výraznější)
-    datasets.push({
-      label: 'Celkem (baseline + součet vln)',
-      data: total,
-      pointRadius: 0,
-      tension: 0.25,
-      borderWidth: 3
-    });
-
-    // jednotlivé vlny (bez baseline)
-    perMeal.forEach((pm, i) => {
-      datasets.push({
-        label: `${pm.meal.time} — ${pm.meal.name} (vlna)`,
-        data: pm.data.map(v => v === 0 ? null : v), // menší “šum” v legendě a grafu
-        pointRadius: 0,
-        tension: 0.25,
-        borderWidth: 2,
-        borderColor: makeColor(i),
-        spanGaps: true
-      });
-    });
 
     if(chart) chart.destroy();
     chart = new Chart(ctx, {
       type: 'line',
-      data: { labels, datasets },
+      data: {
+        labels,
+        datasets: [{
+          label: 'Odhad glykémie (mg/dL)',
+          data: values,
+          pointRadius: 0,
+          tension: 0.25
+        }]
+      },
       options: {
         responsive: true,
         interaction: { mode: 'index', intersect: false },
         scales: {
           x: { ticks: { maxTicksLimit: 10 } },
-          y: { title: { display: true, text: 'mg/dL (celkem) / mg/dL příspěvek (vlny)' } }
-        },
-        plugins: {
-          legend: { display: true }
+          y: { title: { display: true, text: 'mg/dL' } }
         }
       }
     });
   }
 
   document.getElementById('runBtn').addEventListener('click', () => {
-    if(meals.length === 0) return showErr("Přidej aspoň jedno jídlo.");
-    clearErr();
+    if(meals.length === 0) return alert('Přidej aspoň jedno jídlo.');
     drawChart();
   });
 
